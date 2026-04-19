@@ -1,0 +1,40 @@
+# Compiled binaries
+lego-tools/lego-cut
+lego-tools/lego-shift
+lego-tools/lego-analyze
+lego-tools/lego-remove-per-atom
+lego-tools/lego-change-box
+lego-tools/lego-nearest-atoms
+lego-tools/lego-pbc-wrap
+lego-tools/lego-make-box
+lego-tools/atomio.o
+afc/afc
+
+# Also ignore root-level build artifacts from old layout
+lego-cut
+lego-shift
+lego-analyze
+lego-remove-per-atom
+lego-change-box
+lego-nearest-atoms
+lego-pbc-wrap
+lego-make-box
+atomio.o
+
+# Object files
+*.o
+
+# macOS debug symbol bundles
+*.dSYM/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Claude Code settings
+.claude/
+
+# Miscellaneous
+test.txt
