@@ -20,11 +20,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <zlib.h>
 
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+
+/* -------------------------------------------------------------------------- */
+/* Large-file I/O chunk size                                                  */
+/* -------------------------------------------------------------------------- */
+/*
+ * zlib's legacy gzread/gzwrite take an `unsigned int` length and return an
+ * `int`, which means any single call asking for (or returning) more than
+ * 2^31-1 bytes is undefined / fails with -1 depending on zlib version.  On
+ * files larger than 4 GiB, read_whole_file() previously asked gzread() for
+ * `cap - len` bytes cast to `unsigned`, which silently truncates once the
+ * doubling buffer exceeds 4 GiB and triggers a "read error" from zlib.
+ *
+ * We clamp every gzread/gzwrite call to GZ_CHUNK_MAX bytes (default 1 GiB,
+ * comfortably below INT_MAX) and loop.  GZ_CHUNK_MAX is a compile-time knob
+ * so the chunking path can be exercised by tests (e.g. -DGZ_CHUNK_MAX=4096).
+ */
+#ifndef GZ_CHUNK_MAX
+#define GZ_CHUNK_MAX ((size_t)1 << 30)   /* 1 GiB */
 #endif
 
 /* -------------------------------------------------------------------------- */
@@ -152,8 +173,44 @@ Format format_from_string(const char *s) {
 /* file I/O (gzip-aware)                                                      */
 /* -------------------------------------------------------------------------- */
 
-/* Read an entire (possibly gzipped) file into a single NUL-terminated buffer. */
+/* Is atomio debug output requested via LEGO_DEBUG=1 ? */
+static int atomio_debug(void) {
+    static int cached = -1;
+    if (cached < 0) {
+        const char *e = getenv("LEGO_DEBUG");
+        cached = (e && *e && *e != '0') ? 1 : 0;
+    }
+    return cached;
+}
+
+/* Pretty-print a byte size into a caller-supplied buffer. */
+static void human_size(char *out, size_t outsz, size_t n) {
+    static const char *units[] = {"B", "KiB", "MiB", "GiB", "TiB"};
+    double v = (double)n;
+    int u = 0;
+    while (v >= 1024.0 && u < 4) { v /= 1024.0; u++; }
+    snprintf(out, outsz, "%.2f %s (%zu bytes)", v, units[u], n);
+}
+
+/* Read an entire (possibly gzipped) file into a single NUL-terminated buffer.
+ *
+ * Works uniformly on plain and gzipped files: gzopen+gzread pass through
+ * uncompressed data unchanged if no gzip header is present.  Even so, we
+ * always clamp each gzread() call to GZ_CHUNK_MAX bytes, because zlib's
+ * legacy gzread() takes `unsigned int` and returns `int` — it cannot
+ * transfer >= 2 GiB in one call.  Without chunking, files larger than
+ * ~4 GiB trigger an integer truncation on the length cast and zlib then
+ * reports a read error (or silently stops short). */
 static int read_whole_file(const char *path, char **out, size_t *out_len) {
+    int dbg = atomio_debug();
+
+    /* Record on-disk file size up front so we can report it on errors. */
+    off_t file_size = -1;
+    {
+        struct stat st;
+        if (stat(path, &st) == 0) file_size = st.st_size;
+    }
+
     gzFile gf = gzopen(path, "rb");
     if (!gf) {
         fprintf(stderr, "atomio: cannot open %s: %s\n", path, strerror(errno));
@@ -162,24 +219,68 @@ static int read_whole_file(const char *path, char **out, size_t *out_len) {
 #if ZLIB_VERNUM >= 0x1235
     gzbuffer(gf, 1 << 20);
 #endif
+    if (dbg) {
+        char sz[64] = "unknown";
+        if (file_size >= 0) human_size(sz, sizeof(sz), (size_t)file_size);
+        fprintf(stderr, "atomio: opening %s (file size: %s, chunk: %zu)\n",
+                path, sz, (size_t)GZ_CHUNK_MAX);
+    }
     size_t cap = 1 << 20, len = 0;
     char *buf = (char *)malloc(cap);
-    if (!buf) { gzclose(gf); return -1; }
+    if (!buf) {
+        fprintf(stderr, "atomio: out of memory allocating %zu-byte read buffer\n", cap);
+        gzclose(gf);
+        return -1;
+    }
+    size_t next_report = (size_t)1 << 30;   /* debug: report every 1 GiB read */
     for (;;) {
         if (len == cap) {
-            cap *= 2;
-            char *nb = (char *)realloc(buf, cap);
-            if (!nb) { free(buf); gzclose(gf); return -1; }
+            size_t new_cap = cap * 2;
+            if (new_cap <= cap) {
+                fprintf(stderr,
+                        "atomio: read buffer size would overflow size_t at %zu bytes\n",
+                        cap);
+                free(buf); gzclose(gf);
+                return -1;
+            }
+            char *nb = (char *)realloc(buf, new_cap);
+            if (!nb) {
+                fprintf(stderr,
+                        "atomio: out of memory growing read buffer to %zu bytes "
+                        "(already read %zu)\n", new_cap, len);
+                free(buf); gzclose(gf);
+                return -1;
+            }
             buf = nb;
+            cap = new_cap;
         }
-        int n = gzread(gf, buf + len, (unsigned)(cap - len));
+        size_t want = cap - len;
+        if (want > GZ_CHUNK_MAX) want = GZ_CHUNK_MAX;
+        int n = gzread(gf, buf + len, (unsigned)want);
         if (n < 0) {
-            fprintf(stderr, "atomio: read error on %s\n", path);
+            int gzerrno = 0;
+            const char *gzmsg = gzerror(gf, &gzerrno);
+            char sread[64], swant[64];
+            human_size(sread, sizeof(sread), len);
+            human_size(swant, sizeof(swant), want);
+            fprintf(stderr,
+                    "atomio: read error on %s\n"
+                    "        after reading %s, requested chunk %s\n"
+                    "        zlib error: %s (errno=%d)\n"
+                    "        (set LEGO_DEBUG=1 for verbose progress; "
+                    "rebuild with -DGZ_CHUNK_MAX=<bytes> to shrink chunks)\n",
+                    path, sread, swant, gzmsg ? gzmsg : "(none)", gzerrno);
             free(buf); gzclose(gf);
             return -1;
         }
         if (n == 0) break;
         len += (size_t)n;
+        if (dbg && len >= next_report) {
+            char sread[64];
+            human_size(sread, sizeof(sread), len);
+            fprintf(stderr, "atomio: read progress on %s: %s\n", path, sread);
+            next_report += (size_t)1 << 30;
+        }
     }
     gzclose(gf);
     char *nb = (char *)realloc(buf, len + 1);
@@ -187,6 +288,11 @@ static int read_whole_file(const char *path, char **out, size_t *out_len) {
     buf[len] = 0;
     *out = buf;
     *out_len = len;
+    if (dbg) {
+        char sread[64];
+        human_size(sread, sizeof(sread), len);
+        fprintf(stderr, "atomio: finished reading %s: %s\n", path, sread);
+    }
     return 0;
 }
 
@@ -240,14 +346,50 @@ static int wbuf_open(WBuf *w, const char *path) {
     return 0;
 }
 
+/* Flush w->buf to the underlying file.
+ *
+ * Chunks every gzwrite() call to at most GZ_CHUNK_MAX bytes.  The loop is
+ * required for the same reason as read_whole_file(): gzwrite() takes an
+ * `unsigned int` size and returns `int`, so a single call cannot reliably
+ * transfer more than ~2 GiB.  In normal operation wbuf_flush() is called
+ * when the buffer reaches ~1 MiB (see wbuf_reserve), so chunking never
+ * triggers — it's a belt-and-braces safety net for pathological large
+ * output buffers. */
 static int wbuf_flush(WBuf *w) {
     if (w->len == 0) return 0;
     int rc = 0;
     if (w->use_gz) {
-        int n = gzwrite(w->gf, w->buf, (unsigned)w->len);
-        if (n != (int)w->len) rc = -1;
+        size_t off = 0;
+        while (off < w->len) {
+            size_t want = w->len - off;
+            if (want > GZ_CHUNK_MAX) want = GZ_CHUNK_MAX;
+            int n = gzwrite(w->gf, w->buf + off, (unsigned)want);
+            if (n <= 0 || (size_t)n != want) {
+                int gzerrno = 0;
+                const char *gzmsg = gzerror(w->gf, &gzerrno);
+                char swant[64], sdone[64];
+                human_size(swant, sizeof(swant), want);
+                human_size(sdone, sizeof(sdone), off);
+                fprintf(stderr,
+                        "atomio: gzwrite failed: asked %s after %s, "
+                        "gzwrite returned %d, zlib error: %s (errno=%d)\n",
+                        swant, sdone, n, gzmsg ? gzmsg : "(none)", gzerrno);
+                rc = -1;
+                break;
+            }
+            off += (size_t)n;
+        }
     } else {
-        if (fwrite(w->buf, 1, w->len, w->fp) != w->len) rc = -1;
+        size_t got = fwrite(w->buf, 1, w->len, w->fp);
+        if (got != w->len) {
+            char sdone[64], swant[64];
+            human_size(sdone, sizeof(sdone), got);
+            human_size(swant, sizeof(swant), w->len);
+            fprintf(stderr,
+                    "atomio: short fwrite: wrote %s of %s (errno=%d: %s)\n",
+                    sdone, swant, errno, strerror(errno));
+            rc = -1;
+        }
     }
     w->len = 0;
     return rc;
@@ -1113,11 +1255,15 @@ static int read_imd(Config *c, char *buf, size_t buf_len) {
 /* -------------------------------------------------------------------------- */
 
 int config_read(Config *c, const char *filename) {
+    int dbg = atomio_debug();
     config_init(c);
     char *buf = NULL;
     size_t len = 0;
     if (read_whole_file(filename, &buf, &len) != 0) return -1;
     Format f = detect_format(filename);
+    if (dbg) {
+        fprintf(stderr, "atomio: detected format: %s\n", format_name(f));
+    }
     int rc = -1;
     switch (f) {
     case FMT_LAMMPS_DATA: rc = read_lammps_data(c, buf, len); break;
@@ -1128,6 +1274,10 @@ int config_read(Config *c, const char *filename) {
         rc = -1;
     }
     free(buf);
+    if (dbg && rc == 0) {
+        fprintf(stderr, "atomio: parsed %zu atoms, %d columns, ntypes=%d\n",
+                c->natoms, c->ncols, c->ntypes);
+    }
     return rc;
 }
 

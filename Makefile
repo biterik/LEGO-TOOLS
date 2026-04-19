@@ -11,7 +11,7 @@
 #   make no-omp   — build without OpenMP (e.g. if libomp is missing)
 #   make clean    — remove all build artefacts
 
-.PHONY: all clean no-omp lego-tools afc test check
+.PHONY: all clean no-omp lego-tools afc test check test-large
 
 all: lego-tools afc
 
@@ -29,6 +29,12 @@ no-omp:
 # `check` is a conventional alias.
 test check: all
 	@bash tests/smoke.sh
+
+# Regression test for the large-file (>4 GiB) I/O path: rebuilds lego-tools
+# twice with different GZ_CHUNK_MAX values and compares byte-identical
+# output.  Slower than `make test` because it does two full rebuilds.
+test-large: all
+	@bash tests/large-file.sh
 
 clean:
 	$(MAKE) -C lego-tools clean
