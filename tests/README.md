@@ -34,13 +34,15 @@ Checks performed:
 
 ## `large-file.sh`
 
-Regression test for the >4 GiB file path in `atomio.c`.  Zlib's legacy
-`gzread`/`gzwrite` can't transfer more than ~2 GiB in a single call, so
-`atomio.c` chunks every call to `GZ_CHUNK_MAX` bytes (default 1 GiB).  This
-script rebuilds `lego-tools` with a tiny `GZ_CHUNK_MAX=4096`, which forces
-*hundreds* of gzread/gzwrite calls per file, and asserts that the output is
-byte-identical to a reference build at the default chunk size.  Also checks
-that `LEGO_DEBUG=1` emits the expected diagnostic lines.
+Regression test for the >4 GiB file path in `atomio.c` **and**
+`afc/converter.c`.  Zlib's legacy `gzread`/`gzwrite` can't transfer more
+than ~2 GiB in a single call, so both I/O libraries chunk every call to
+`GZ_CHUNK_MAX` bytes (default 1 GiB).  This script rebuilds *both*
+`lego-tools` and `afc` with a tiny `GZ_CHUNK_MAX=4096`, which forces
+*hundreds* of gzread/gzwrite calls per file, and asserts that the output
+is byte-identical to a reference build at the default chunk size.  Also
+checks that `LEGO_DEBUG=1` emits the expected diagnostic lines on both
+code paths.
 
 Run from the repo root:
 
