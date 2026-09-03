@@ -1,9 +1,10 @@
 # LEGO-TOOLS
 
 A collection of command-line tools for manipulating and converting atomistic simulation data.
-The suite consists of two components: **lego-tools**, a set of utilities for filtering,
-transforming, and inspecting atomic configurations; and **afc** (Atomic Format Converter),
-a tool for converting between common atomistic file formats.
+The suite consists of three components: **lego-tools**, a set of utilities for filtering,
+transforming, and inspecting atomic configurations; **afc** (Atomic Format Converter),
+a tool for converting between common atomistic file formats; and **lego-dislo**, a tool
+that inserts dislocations via the anisotropic elastic displacement field (sextic method).
 
 All tools are written in C (C11) with optional OpenMP parallelism and transparent gzip
 support via zlib.  Scripts in `lego-tools/scripts/` provide supplementary functionality
@@ -56,11 +57,22 @@ LEGO-TOOLS/
 │       ├── cut.awk           AWK filter for IMD-format coordinate cutting
 │       ├── lmps_get_max.awk  AWK script to report coordinate extremes (LAMMPS dump)
 │       └── shift_lmps.py     Python script to shift LAMMPS data files
-└── afc/                      Atomic Format Converter
+├── afc/                      Atomic Format Converter
+│   ├── Makefile
+│   ├── main.c                CLI entry point → afc
+│   ├── converter.c / .h      Core conversion library
+│   └── elements.h            Element symbol table (Z = 1–118)
+└── dislo/                    Anisotropic elastic dislocation insertion
     ├── Makefile
-    ├── main.c                CLI entry point → afc
-    ├── converter.c / .h      Core conversion library
-    └── elements.h            Element symbol table (Z = 1–118)
+    ├── README.md             Full documentation (theory, card format, API)
+    ├── TOOLCARD.md           One-page reference (for humans and LLM agents)
+    ├── main.c                CLI entry point → lego-dislo
+    ├── card.c / .h           Input-card parser
+    ├── sextic.c / .h         Sextic solver + displacement field
+    ├── findroots.c           Laguerre polynomial root finder
+    ├── python/legodislo/     Python driver (stdlib-only)
+    ├── examples/             Runnable edge/screw/dipole examples
+    └── tests/                Unit tests, golden validation, benchmark
 ```
 
 ---
@@ -102,6 +114,7 @@ make no-omp
 ```bash
 make lego-tools   # build only the lego-tools suite
 make afc          # build only the Atomic Format Converter
+make dislo        # build only lego-dislo (also builds atomio)
 ```
 
 ### macOS (Apple Silicon / Homebrew)
@@ -329,6 +342,37 @@ afc -t Ni grain.lmp grain.cel
 afc -t "1=Ni,2=Al" alloy.data alloy.xyz
 afc input.xyz.gz output.lmp
 ```
+
+---
+
+### `lego-dislo` — anisotropic elastic dislocation insertion
+
+Insert one or many dislocations into an atomistic configuration (up to ~10⁸ atoms)
+by adding the anisotropic elastic displacement field of each dislocation (sextic
+method, Hirth & Lothe, *Theory of Dislocations*). A faithful, OpenMP-parallel port
+of the 2005 Fortran toolkit *Disloelast*, driven by a single small card file
+(elastic constants, box orientation, and per-dislocation line direction, Burgers
+vector, and glide plane, all as crystallographic directions).
+
+```
+lego-dislo [options] CARD INPUT OUTPUT
+lego-dislo --solve-only CARD             # solver report only, no atoms
+
+Options:
+  --in-format=lammps|lammps-dump|imd   (default: auto-detect)
+  --out-format=lammps|lammps-dump|imd  (default: lammps)
+  --threads=N                          (default: OMP_NUM_THREADS)
+  --report=FILE                        write P/F/G and K factors to FILE
+  -h, --help
+```
+
+Multiple dislocations superpose linearly (no periodic-image corrections); box
+bounds are left unchanged — cut/shift afterwards with `lego-cut` / `lego-shift`.
+A stdlib-only Python driver lives in `dislo/python/legodislo`. See
+[`dislo/README.md`](dislo/README.md) for the card format, theory, validation
+against the original 2005 golden outputs, and worked examples
+(`dislo/examples/`); [`dislo/TOOLCARD.md`](dislo/TOOLCARD.md) is a one-page
+compact reference.
 
 ---
 

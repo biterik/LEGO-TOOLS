@@ -159,6 +159,60 @@ else
     fail "lego-remove-per-atom natoms: got '${st_n:-<missing>}', expected $EXPECTED_ATOMS"
 fi
 
+# -- 6) lego-dislo inserts a dislocation -------------------------------------
+echo "[6] lego-dislo (W 1/2<111> edge in a small crystal)"
+
+DISLO="$ROOT/dislo/lego-dislo"
+need "$DISLO"
+
+python3 "$ROOT/dislo/examples/make_crystal.py" \
+    --a0=3.1652 --x=1,1,1 --y=-1,0,1 --z=1,-2,1 --size=30,30,8 --center \
+    --out="$TMP/dislo_in.data" >/dev/null 2>&1 \
+    && ok "make_crystal.py generated a sample" \
+    || fail "make_crystal.py exited non-zero"
+
+cat > "$TMP/dislo_card.yaml" <<'EOF'
+material:
+  name: W
+  lattice_parameter: 3.1652
+  cij:
+    cubic: {c11: 522.4, c12: 204.4, c44: 160.6}
+box_orientation:
+  x: [1, 1, 1]
+  y: [-1, 0, 1]
+  z: [1, -2, 1]
+dislocations:
+  - point: [0.1, 0.05, 0.0]
+    line: [1, -2, 1]
+    burgers_direction: [-1, -1, -1]
+    burgers_magnitude: 0.8663
+    glide_normal: [-1, 0, 1]
+EOF
+
+di_in=$("$LEGO/lego-analyze" --json "$TMP/dislo_in.data" 2>/dev/null \
+         | tr -d '[:space:]' | grep -oE '"natoms":[0-9]+' | head -n1 \
+         | grep -oE '[0-9]+' || true)
+
+if "$DISLO" "$TMP/dislo_card.yaml" "$TMP/dislo_in.data" "$TMP/dislo_out.data" \
+        > "$TMP/dislo_report.txt" 2>/dev/null; then
+    ok "lego-dislo ran"
+else
+    fail "lego-dislo exited non-zero"
+fi
+
+grep -q "K_GPa" "$TMP/dislo_report.txt" \
+    && ok "report contains the K factor" \
+    || fail "report is missing the K factor"
+
+di_n=$("$LEGO/lego-analyze" --json "$TMP/dislo_out.data" 2>/dev/null \
+         | tr -d '[:space:]' | grep -oE '"natoms":[0-9]+' | head -n1 \
+         | grep -oE '[0-9]+' || true)
+if [ -n "$di_n" ] && [ "$di_n" = "$di_in" ]; then
+    ok "lego-dislo preserves atom count ($di_n)"
+else
+    fail "lego-dislo natoms: got '${di_n:-<missing>}', expected '${di_in:-?}'"
+fi
+
 echo
 echo "----------------------------------------------------------------------"
 echo "Results: $PASS passed, $FAIL failed"

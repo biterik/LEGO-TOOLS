@@ -9,6 +9,7 @@ lego-tools/lego-pbc-wrap
 lego-tools/lego-make-box
 lego-tools/atomio.o
 afc/afc
+dislo/lego-dislo
 
 # Also ignore root-level build artifacts from old layout
 lego-cut

@@ -1,0 +1,22 @@
+# Two opposite W 1/2<111> edge dislocations (a dipole), 30 A apart on the
+# same glide plane — plain linear superposition of the two fields.
+material:
+  name: W
+  lattice_parameter: 3.1652
+  cij:
+    cubic: {c11: 522.4, c12: 204.4, c44: 160.6}
+box_orientation:
+  x: [1, 1, 1]
+  y: [-1, 0, 1]
+  z: [1, -2, 1]
+dislocations:
+  - point: [-15.0, 0.05, 0.0]
+    line: [1, -2, 1]
+    burgers_direction: [-1, -1, -1]
+    burgers_magnitude: 0.8663
+    glide_normal: [-1, 0, 1]
+  - point: [15.0, 0.05, 0.0]
+    line: [1, -2, 1]
+    burgers_direction: [1, 1, 1]        # opposite Burgers vector
+    burgers_magnitude: 0.8663
+    glide_normal: [-1, 0, 1]

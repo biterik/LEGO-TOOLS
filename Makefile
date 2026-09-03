@@ -11,9 +11,9 @@
 #   make no-omp   — build without OpenMP (e.g. if libomp is missing)
 #   make clean    — remove all build artefacts
 
-.PHONY: all clean no-omp lego-tools afc test check test-large
+.PHONY: all clean no-omp lego-tools afc dislo test check test-large
 
-all: lego-tools afc
+all: lego-tools afc dislo
 
 lego-tools:
 	$(MAKE) -C lego-tools all
@@ -21,9 +21,13 @@ lego-tools:
 afc:
 	$(MAKE) -C afc all
 
+dislo: lego-tools
+	$(MAKE) -C dislo all
+
 no-omp:
 	$(MAKE) -C lego-tools no-omp
 	$(MAKE) -C afc OPENMP=no all
+	$(MAKE) -C dislo no-omp
 
 # Run the end-to-end smoke test. Builds first so tests see up-to-date binaries.
 # `check` is a conventional alias.
@@ -39,3 +43,4 @@ test-large: all
 clean:
 	$(MAKE) -C lego-tools clean
 	$(MAKE) -C afc clean
+	$(MAKE) -C dislo clean

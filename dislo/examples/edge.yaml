@@ -1,0 +1,17 @@
+# W 1/2<111>{110} edge dislocation — the classic Disloelast reference case.
+# Elastic constants: Finnis-Sinclair tungsten (GPa); |b| = sqrt(3)/2 * a0.
+material:
+  name: W
+  lattice_parameter: 3.1652
+  cij:
+    cubic: {c11: 522.4, c12: 204.4, c44: 160.6}
+box_orientation:
+  x: [1, 1, 1]
+  y: [-1, 0, 1]
+  z: [1, -2, 1]
+dislocations:
+  - point: [0.1, 0.05, 0.0]        # slightly off-lattice: no atom at the core
+    line: [1, -2, 1]
+    burgers_direction: [-1, -1, -1]
+    burgers_magnitude: 0.8663
+    glide_normal: [-1, 0, 1]
