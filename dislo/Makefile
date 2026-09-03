@@ -37,8 +37,12 @@ lego-dislo: main.c card.c sextic.c findroots.c \
 	$(CC) $(CFLAGS) main.c card.c sextic.c findroots.c $(ATOMIO) \
 	    -o lego-dislo $(LDFLAGS) $(LDLIBS)
 
-# Build without OpenMP
+# Build without OpenMP.  atomio.o must also be OpenMP-free: rebuild it
+# through the lego-tools no-omp path first (a stale OpenMP atomio.o would
+# otherwise fail to link without -lomp).
 no-omp:
+	rm -f ../lego-tools/atomio.o
+	$(MAKE) -C ../lego-tools atomio.o OMP_FLAG= OMP_INC= OMP_LIB=
 	$(MAKE) OMP_FLAG= OMP_INC= OMP_LIB=
 
 clean:

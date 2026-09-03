@@ -31,6 +31,16 @@ Checks performed:
 3. `lego-shift` preserves atom count.
 4. `lego-pbc-wrap` preserves atom count.
 5. `lego-remove-per-atom` preserves atom count.
+6. `lego-dislo` inserts a W ½⟨111⟩ edge dislocation into a small generated
+   crystal, reports the K factor, and preserves the atom count.
+
+The full `lego-dislo` test suite (unit/physics tests plus validation
+against the legacy Disloelast golden files, which auto-skips when the
+reference folder is absent) lives in `dislo/tests/`:
+
+```bash
+./dislo/tests/run_tests.sh
+```
 
 ## `large-file.sh`
 
