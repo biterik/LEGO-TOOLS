@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -323,6 +324,9 @@ int main(int argc, char **argv) {
     double a0 = card.a0;
     int nd = card.ndislo;
 
+    struct timespec t0, t1;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+
 #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < N; i++) {
         double *row = D + i * (size_t)nc;
@@ -350,8 +354,17 @@ int main(int argc, char **argv) {
         row[iz] = rz + az;
     }
 
-    fprintf(stderr, "lego-dislo: displaced %zu atoms (%d dislocation%s)\n",
-            N, nd, nd == 1 ? "" : "s");
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    double dt = (double)(t1.tv_sec - t0.tv_sec)
+              + 1e-9 * (double)(t1.tv_nsec - t0.tv_nsec);
+    int nthreads = 1;
+#ifdef _OPENMP
+    nthreads = omp_get_max_threads();
+#endif
+    fprintf(stderr, "lego-dislo: displaced %zu atoms (%d dislocation%s) "
+            "in %.3f s field time, %d thread%s\n",
+            N, nd, nd == 1 ? "" : "s", dt, nthreads,
+            nthreads == 1 ? "" : "s");
 
     int rc = config_write(&c, output, out_fmt);
     config_free(&c);
