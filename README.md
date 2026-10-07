@@ -376,6 +376,20 @@ compact reference.
 
 ---
 
+## Examples
+
+### `examples/fcc-Ni-single-dislocation-pps/` — one dislocation per cell: screw, 30°, 60°, edge
+
+The full chain **LEGO → dcreator → lego-cut → box correction → LAMMPS** for a single
+a/2⟨110⟩{111} dislocation in an fcc Ni slab (periodic along glide direction and line, free
+(111) surfaces). For each character it computes the box's x-period vector, which must be the
+average of the two half-crystals' periods: Lx′ = L0 − b_e/2, plus a y-offset δ = ±b_s/2 along
+the line. It checks the seam, relaxes the cell both as built and corrected, and plots all six
+stress components. Read its README before building single-dislocation cells:
+`lego-change-box` (header only) and LAMMPS `change_box xy` (wrong axis) cannot do this step.
+
+---
+
 ## Contributing
 
 Contributions are welcome — bug fixes, new tools, additional format support, and

@@ -1,0 +1,45 @@
+# Relax one dislocation in a p p s slab (x glide direction, y line, z glide-plane normal).
+# Required -var:  name      cell basename (…_cut.lmp in celldir)
+#                 celldir   directory with the cut cell and box-correction_<name>.lmp
+#                 outdir    output directory
+#                 pot       eam/alloy file;  elem  element name in it
+#                 corr      0 = box as built (uncorrected),  1 = corrected period vector (Lx', delta)
+# corr 1 reads <name>_corrected-period-vector.lmp from apply_period_vector.py: a TRICLINIC cell in the
+# frame X = line, Y = -glide, Z = normal (LAMMPS can only tilt its second box vector, see that script).
+units           metal
+atom_style      atomic
+boundary        p p s
+if "${corr} == 1" then &
+  "read_data ${celldir}/${name}_corrected-period-vector.lmp" &
+  "variable variant string corrected" &
+else &
+  "read_data ${celldir}/${name}_cut.lmp" &
+  "variable variant string uncorrected"
+include         ${celldir}/box-correction_${name}.lmp
+
+pair_style      eam/alloy
+pair_coeff      * * ${pot} ${elem}
+
+# 2D-dynamic boundary (Rodney): the 3 outermost (111) layers per z-face move only in x and y
+region          r_lo block INF INF INF INF INF ${z_fix_lo} units box
+region          r_hi block INF INF INF INF ${z_fix_hi} INF units box
+group           g_lo region r_lo
+group           g_hi region r_hi
+group           g_surf union g_lo g_hi
+fix             f_2d g_surf setforce NULL NULL 0.0
+
+compute         pe all pe/atom
+compute         s all stress/atom NULL
+compute         cna all cna/atom 3.006
+thermo          200
+thermo_style    custom step pe fnorm pxx pyy pzz pxy pxz pyz
+thermo_modify   format float %.8g
+
+min_style       fire
+minimize        0.0 1.0e-4 50000 100000
+
+print           "RESULT ${name} ${variant} pe $(pe:%.6f) fnorm $(fnorm:%.3e) pxx $(pxx:%.2f) pyy $(pyy:%.2f) pzz $(pzz:%.2f) pxy $(pxy:%.2f) pxz $(pxz:%.2f) pyz $(pyz:%.2f) lx $(lx:%.6f) ly $(ly:%.6f) xy $(xy:%.6f)"
+write_dump      all custom ${outdir}/relaxed_${name}_${variant}_stress-tensor.dump id type x y z c_pe c_s[1] c_s[2] c_s[3] c_s[4] c_s[5] c_s[6] c_cna &
+                modify format float %.6g
+write_data      ${outdir}/relaxed_${name}_${variant}.lmp nocoeff
+print           "ALL PHASES COMPLETE"

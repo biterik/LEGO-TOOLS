@@ -1,0 +1,10 @@
+# written by build_single_dislocation_cell.py for Ni_edge_x-101_y1-21_z111
+variable Lx_built  equal 149.3409511866
+variable Lx_corr   equal 148.0964432600   # = (L_top + L_bot)/2
+variable xy_corr   equal -0.0000000000   # = delta = <dU_y> over the halves: y-offset of the x-period vector
+variable z_glide   equal 72.1457000000
+variable x_line    equal 74.6704755933
+variable z_fix_lo  equal 5.796819   # 3 (111) layers per face held in z
+variable z_fix_hi  equal 138.494560
+variable b_edge    equal 2.4890158698
+variable b_screw   equal 0.0000000000

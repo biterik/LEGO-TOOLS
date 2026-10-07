@@ -1,0 +1,103 @@
+$ lego out/cells/lego_Ni_screw_x-211_y0-11_z111.param
+========================================
+  LEGO - Lattice Elemental Geometry Operations
+========================================
+
+OpenMP enabled: 2 threads available
+
+Reading parameters from: out/cells/lego_Ni_screw_x-211_y0-11_z111.param
+Read POSCAR: 'FCC conventional cell' (4 atoms, 1 types)
+=== Lattice Setup ===
+
+Mass override type 0: 1.000000 -> 58.693400 AMU
+Computed new_y: [0.000000 -0.707107 0.707107], |y|=1.000000
+Rotation matrix 1:
+   -0.81649658   0.40824829   0.40824829
+    0.00000000  -0.70710678   0.70710678
+    0.57735027   0.57735027   0.57735027
+
+Rotation matrix 2:
+    1.00000000   0.00000000   0.00000000
+    0.00000000   1.00000000   0.00000000
+    0.00000000   0.00000000   1.00000000
+
+Combined rotation matrix:
+   -0.81649658   0.40824829   0.40824829
+    0.00000000  -0.70710678   0.70710678
+    0.57735027   0.57735027   0.57735027
+
+Lattice vectors (after scaling):
+  a1 = [3.52000000 0.00000000 0.00000000]
+  a2 = [0.00000000 3.52000000 0.00000000]
+  a3 = [0.00000000 0.00000000 3.52000000]
+
+Rotated lattice matrix M (columns = rotated vectors):
+   -2.87406796   1.43703398   1.43703398
+    0.00000000  -2.48901587   2.48901587
+    2.03227295   2.03227295   2.03227295
+
+M^{-1}:
+   -0.23195926  -0.00000000   0.16401996
+    0.11597963  -0.20088261   0.16401996
+    0.11597963   0.20088261   0.16401996
+
+Min repeat distances:
+  x: 8.6222038945967885
+  y: 4.9780317395532956
+  z: 6.0968188426424490
+
+Box sizing (periodic mode):
+  Axis x: target=150.0000, repeat=8.62220389, n=17, actual=146.5774652081454121
+  Axis y: target=30.0000, repeat=4.97803174, n=6, actual=29.8681894373197743
+  Axis z: target=150.0000, repeat=6.09681884, n=24, actual=146.3236512234187785
+
+Final box dimensions: 146.5774652081454121  29.8681894373197743  146.3236512234187785
+
+Loop bounds (automatic):
+  i: [-36, 26]  (63)
+  j: [-8, 43]  (52)
+  k: [-2, 49]  (52)
+  Total iterations: 170352 (x 4 basis atoms = 681408 candidates)
+
+Crystal structure: FCC conventional cell
+  1 types, 4 atoms per cell
+  Type 0 (X): 4 atoms, mass 58.693400 AMU
+
+=== End Lattice Setup ===
+
+Counting atoms...
+Total atoms: 58752
+
+Output format: LAMMPS data
+Output file: out/cells/Ni_screw_x-211_y0-11_z111_perfect-slab.lmp
+
+Generating atoms...
+
+========================================
+  Summary
+========================================
+Structure: FCC conventional cell
+Atoms: 58752
+Box: 146.57746521 x 29.86818944 x 146.32365122
+Min repeat: 8.62220389  4.97803174  6.09681884
+Output: out/cells/Ni_screw_x-211_y0-11_z111_perfect-slab.lmp (LAMMPS)
+========================================
+$ dcreator out/cells/dcreator_Ni_screw_x-211_y0-11_z111.dissparam
+dcreator 2.0 - parallel Volterra dislocation inserter
+  (C) 2000-2026 Erik Bitzek, GPL-3.0-or-later, NO WARRANTY.
+  If you publish results obtained with dcreator please cite:
+    Vaid, Wei, Bitzek, Nasiri, Zaiser, Acta Mater. 236 (2022) 118095.
+    https://doi.org/10.1016/j.actamat.2022.118095
+
+  input  : out/cells/Ni_screw_x-211_y0-11_z111_perfect-slab.lmp
+  output : out/cells/Ni_screw_x-211_y0-11_z111_dcreator-inserted.lmp (lammps_data)
+  mode   : upper_half
+  rigid  : right
+  stripe : 30
+  threads: 2 (OpenMP)
+  |b|    : 2.48902
+  char   : screw (angle(b,l)=0.000 deg)
+  atoms  : 58752 (source format: lammps_data)
+done.
+$ lego-cut 0 146.5774652071 -1e9 1e9 -1e9 1e9 out/cells/Ni_screw_x-211_y0-11_z111_dcreator-inserted.lmp out/cells/Ni_screw_x-211_y0-11_z111_cut.lmp
+lego-cut: kept 58752 / 58752 atoms

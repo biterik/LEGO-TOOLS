@@ -1,0 +1,13 @@
+configfile         out/cells/Ni_30deg_x-101_y1-21_z111_perfect-slab.lmp
+outfile            out/cells/Ni_30deg_x-101_y1-21_z111_dcreator-inserted.lmp
+new_x              -1 0 1
+new_z              1 1 1
+burgersv           0.000000 -1.760000 1.760000
+linev              1 -2 1
+glideplane         1 1 1
+point              74.670476 0.0 72.145700
+stripe             30.0
+displacement_mode  upper_half
+rigid_side         left
+input_format       lammps_data
+output_format      lammps_data

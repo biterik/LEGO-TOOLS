@@ -1,0 +1,11 @@
+structure      fcc
+lattice_const  3.52
+mass           58.6934
+new_x          -2 1 1
+new_z          1 1 1
+box_x          150.0
+box_y          30.0
+box_z          150.0
+box_mode       periodic
+outfile        out/cells/Ni_screw_x-211_y0-11_z111_perfect-slab.lmp
+output_format  lammps

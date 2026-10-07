@@ -1,0 +1,8 @@
+character screw  b(sample) = [ 0.     2.489 -0.   ]  |b_e| = 0.0000  |b_s| = 2.4890
+dcreator rigid_side = right  (x_d = [-1. -0. -0.])  glide gap z = 72.1457  line x = 73.2887
+atoms: perfect 58752  inserted 58752  after cut 58752  (deleted 0)
+rigid-shift difference, low-x minus high-x end: top [0.    2.489 0.   ]  bottom [0. 0. 0.]
+natural x length: top 146.5775  bottom 146.5775  -> edge content L_bot - L_top = +0.0000 A
+REQUIRED Lx = 146.5775 A   (box as built 146.5775; difference +0.0000 A = +0.000 %)
+REQUIRED delta = +1.2445 A  (y-offset of the x-period vector; box as built 0)
+seam coordination after remap (neighbours < 3.0 A : atoms): {12: 2376} -> PASS

@@ -1,0 +1,143 @@
+LAMMPS (22 Jul 2025 - Update 4)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread.
+  using 1 OpenMP thread(s) per MPI task
+# Relax one dislocation in a p p s slab (x glide direction, y line, z glide-plane normal).
+# Required -var:  name      cell basename (…_cut.lmp in celldir)
+#                 celldir   directory with the cut cell and box-correction_<name>.lmp
+#                 outdir    output directory
+#                 pot       eam/alloy file;  elem  element name in it
+#                 corr      0 = box as built (uncorrected),  1 = corrected period vector (Lx', delta)
+# corr 1 reads <name>_corrected-period-vector.lmp from apply_period_vector.py: a TRICLINIC cell in the
+# frame X = line, Y = -glide, Z = normal (LAMMPS can only tilt its second box vector, see that script).
+units           metal
+atom_style      atomic
+boundary        p p s
+if "${corr} == 1" then   "read_data ${celldir}/${name}_corrected-period-vector.lmp"   "variable variant string corrected" else   "read_data ${celldir}/${name}_cut.lmp"   "variable variant string uncorrected"
+read_data ${celldir}/${name}_corrected-period-vector.lmp
+read_data out/cells/${name}_corrected-period-vector.lmp
+read_data out/cells/Ni_edge_x-101_y1-21_z111_corrected-period-vector.lmp
+Reading data file ...
+  triclinic box = (0 0 0) to (25.866611 148.09644 146.32365) with tilt (0 0 0)
+  1 by 1 by 1 MPI processor grid
+  reading atoms ...
+  51408 atoms
+  read_data CPU = 0.104 seconds
+variable variant string corrected
+include         ${celldir}/box-correction_${name}.lmp
+include         out/cells/box-correction_${name}.lmp
+include         out/cells/box-correction_Ni_edge_x-101_y1-21_z111.lmp
+# written by build_single_dislocation_cell.py for Ni_edge_x-101_y1-21_z111
+variable Lx_built  equal 149.3409511866
+variable Lx_corr   equal 148.0964432600   # = (L_top + L_bot)/2
+variable xy_corr   equal -0.0000000000   # = delta = <dU_y> over the halves: y-offset of the x-period vector
+variable z_glide   equal 72.1457000000
+variable x_line    equal 74.6704755933
+variable z_fix_lo  equal 5.796819   # 3 (111) layers per face held in z
+variable z_fix_hi  equal 138.494560
+variable b_edge    equal 2.4890158698
+variable b_screw   equal 0.0000000000
+
+pair_style      eam/alloy
+pair_coeff      * * ${pot} ${elem}
+pair_coeff      * * Cu_Ni_Fischer_2018.eam.alloy ${elem}
+pair_coeff      * * Cu_Ni_Fischer_2018.eam.alloy Ni
+
+# 2D-dynamic boundary (Rodney): the 3 outermost (111) layers per z-face move only in x and y
+region          r_lo block INF INF INF INF INF ${z_fix_lo} units box
+region          r_lo block INF INF INF INF INF 5.796819 units box
+region          r_hi block INF INF INF INF ${z_fix_hi} INF units box
+region          r_hi block INF INF INF INF 138.49456 INF units box
+group           g_lo region r_lo
+2160 atoms in group g_lo
+group           g_hi region r_hi
+2124 atoms in group g_hi
+group           g_surf union g_lo g_hi
+4284 atoms in group g_surf
+fix             f_2d g_surf setforce NULL NULL 0.0
+
+compute         pe all pe/atom
+compute         s all stress/atom NULL
+compute         cna all cna/atom 3.006
+thermo          200
+thermo_style    custom step pe fnorm pxx pyy pzz pxy pxz pyz
+thermo_modify   format float %.8g
+
+min_style       fire
+minimize        0.0 1.0e-4 50000 100000
+Neighbor list info ...
+  update: every = 1 steps, delay = 0 steps, check = yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 8.724884
+  ghost atom cutoff = 8.724884
+  binsize = 4.362442, bins = 6 34 34
+  2 neighbor lists, perpetual/occasional/extra = 1 1 0
+  (1) pair eam/alloy, perpetual
+      attributes: half, newton on
+      pair build: half/bin/atomonly/newton/tri
+      stencil: half/bin/3d/tri
+      bin: standard
+  (2) compute cna/atom, occasional
+      attributes: full, newton on
+      pair build: full/bin/atomonly
+      stencil: full/bin/3d
+      bin: standard
+  Parameters for fire:
+    dmax  delaystep dtgrow dtshrink alpha0 alphashrink tmax tmin   integrator   halfstepback   abcfire  
+     0.1     20      1.1     0.5     0.25     0.99      10  0.02 eulerimplicit      yes          no     
+Per MPI rank memory allocation (min/avg/max) = 51.13 | 51.13 | 51.13 Mbytes
+   Step         PotEng         Fnorm           Pxx            Pyy            Pzz            Pxy            Pxz            Pyz      
+         0  -227615.16 20.656335 -114.01904 5373.0852 1205.8042 -1.6003119e-07 -1173.469 2.8895886e-07
+       200  -227866.99 0.022645213 -1292.8812 -625.59976 345.23272 4.9498227e-07 -328.14455 -9.9866123e-07
+       400  -227867.03 0.0024915258 -1124.0035 -797.70775 346.55421 -6.2390017e-08 -7.5510531 1.1600646e-07
+       598  -227867.03 9.8097359e-05 -1121.9397 -800.93565 346.17916 4.0149123e-08 -2.1378291 -7.6490381e-08
+Loop time of 111.466 on 1 procs for 598 steps with 51408 atoms
+
+98.5% CPU use with 1 MPI tasks x 1 OpenMP threads
+
+Minimization stats:
+  Stopping criterion = force tolerance
+  Energy initial, next-to-last, final = 
+     -227615.155848056  -227867.026368245  -227867.026368317
+  Force two-norm initial, final = 20.656335 9.8097359e-05
+  Force max component initial, final = 0.96219177 8.9825463e-07
+  Final line search alpha, max atom move = 0 0
+  Iterations, force evaluations = 598 600
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 110.33     | 110.33     | 110.33     |   0.0 | 98.98
+Neigh   | 0          | 0          | 0          |   0.0 |  0.00
+Comm    | 0.30061    | 0.30061    | 0.30061    |   0.0 |  0.27
+Output  | 0.00076583 | 0.00076583 | 0.00076583 |   0.0 |  0.00
+Modify  | 0.041874   | 0.041874   | 0.041874   |   0.0 |  0.04
+Other   |            | 0.7929     |            |       |  0.71
+
+Nlocal:          51408 ave       51408 max       51408 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:          46668 ave       46668 max       46668 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:    6.19508e+06 ave 6.19508e+06 max 6.19508e+06 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+FullNghs:            0 ave           0 max           0 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 6195078
+Ave neighs/atom = 120.50805
+Neighbor list builds = 0
+Dangerous builds = 0
+
+print           "RESULT ${name} ${variant} pe $(pe:%.6f) fnorm $(fnorm:%.3e) pxx $(pxx:%.2f) pyy $(pyy:%.2f) pzz $(pzz:%.2f) pxy $(pxy:%.2f) pxz $(pxz:%.2f) pyz $(pyz:%.2f) lx $(lx:%.6f) ly $(ly:%.6f) xy $(xy:%.6f)"
+RESULT Ni_edge_x-101_y1-21_z111 corrected pe -227867.026368 fnorm 9.810e-05 pxx -1121.94 pyy -800.94 pzz 346.18 pxy 0.00 pxz -2.14 pyz -0.00 lx 25.866611 ly 148.096443 xy 0.000000
+write_dump      all custom ${outdir}/relaxed_${name}_${variant}_stress-tensor.dump id type x y z c_pe c_s[1] c_s[2] c_s[3] c_s[4] c_s[5] c_s[6] c_cna                 modify format float %.6g
+write_dump      all custom out/relaxed/relaxed_${name}_${variant}_stress-tensor.dump id type x y z c_pe c_s[1] c_s[2] c_s[3] c_s[4] c_s[5] c_s[6] c_cna                 modify format float %.6g
+write_dump      all custom out/relaxed/relaxed_Ni_edge_x-101_y1-21_z111_${variant}_stress-tensor.dump id type x y z c_pe c_s[1] c_s[2] c_s[3] c_s[4] c_s[5] c_s[6] c_cna                 modify format float %.6g
+write_dump      all custom out/relaxed/relaxed_Ni_edge_x-101_y1-21_z111_corrected_stress-tensor.dump id type x y z c_pe c_s[1] c_s[2] c_s[3] c_s[4] c_s[5] c_s[6] c_cna                 modify format float %.6g
+write_data      ${outdir}/relaxed_${name}_${variant}.lmp nocoeff
+write_data      out/relaxed/relaxed_${name}_${variant}.lmp nocoeff
+write_data      out/relaxed/relaxed_Ni_edge_x-101_y1-21_z111_${variant}.lmp nocoeff
+write_data      out/relaxed/relaxed_Ni_edge_x-101_y1-21_z111_corrected.lmp nocoeff
+System init for write_data ...
+print           "ALL PHASES COMPLETE"
+ALL PHASES COMPLETE
+Total wall time: 0:01:52

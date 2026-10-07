@@ -1,0 +1,13 @@
+configfile         out/cells/Ni_screw_x-211_y0-11_z111_perfect-slab.lmp
+outfile            out/cells/Ni_screw_x-211_y0-11_z111_dcreator-inserted.lmp
+new_x              -2 1 1
+new_z              1 1 1
+burgersv           0.000000 -1.760000 1.760000
+linev              0 -1 1
+glideplane         1 1 1
+point              73.288733 0.0 72.145700
+stripe             30.0
+displacement_mode  upper_half
+rigid_side         right
+input_format       lammps_data
+output_format      lammps_data

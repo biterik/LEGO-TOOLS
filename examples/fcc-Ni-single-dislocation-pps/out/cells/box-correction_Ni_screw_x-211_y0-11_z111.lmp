@@ -1,0 +1,10 @@
+# written by build_single_dislocation_cell.py for Ni_screw_x-211_y0-11_z111
+variable Lx_built  equal 146.5774652081
+variable Lx_corr   equal 146.5774652081   # = (L_top + L_bot)/2
+variable xy_corr   equal 1.2445079349   # = delta = <dU_y> over the halves: y-offset of the x-period vector
+variable z_glide   equal 72.1457000000
+variable x_line    equal 73.2887326041
+variable z_fix_lo  equal 5.796819   # 3 (111) layers per face held in z
+variable z_fix_hi  equal 138.494560
+variable b_edge    equal 0.0000000000
+variable b_screw   equal 2.4890158698
