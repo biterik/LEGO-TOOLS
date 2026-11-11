@@ -7,27 +7,27 @@
     "prs_merged_30d": 0,
     "prs_opened_30d": 0
   },
-  "collected_at": "2026-11-10T11:17:45Z",
-  "date": "2026-11-10",
+  "collected_at": "2026-11-11T11:03:35Z",
+  "date": "2026-11-11",
   "derived": {
-    "clones_last_30d": 256,
-    "clones_last_7d": 73,
+    "clones_last_30d": 234,
+    "clones_last_7d": 71,
     "downloads_gained_30d": 0,
     "downloads_total": 0,
     "funnel_30d": {
       "downloads_gained": 0,
       "stars_gained": 0,
-      "unique_cloners": 159,
-      "unique_visitors": 4
+      "unique_cloners": 143,
+      "unique_visitors": 3
     },
-    "history_days": 139,
+    "history_days": 140,
     "per_30d": {
-      "clones": 157.6,
+      "clones": 157.1,
       "downloads_gained": 0.0,
       "stars_gained": 0.0,
-      "unique_cloners": 108.6,
+      "unique_cloners": 108.2,
       "unique_visitors": 1.7,
-      "views": 2.2
+      "views": 2.1
     },
     "repo_created_at": "2026-04-19T17:06:44Z",
     "star_forecast": {
@@ -40,35 +40,35 @@
     "stars_gained_7d": 0,
     "stars_now": 0,
     "totals": {
-      "clones": 730,
+      "clones": 733,
       "downloads_gained": 0,
       "stars_gained": 0,
-      "unique_cloners": 503,
+      "unique_cloners": 505,
       "unique_visitors": 8,
       "views": 10
     },
-    "tracking_days": 139,
+    "tracking_days": 140,
     "tracking_since": "2026-06-25",
-    "views_last_30d": 4,
+    "views_last_30d": 3,
     "views_last_7d": 1,
-    "views_prev_7d": 2,
+    "views_prev_7d": 1,
     "windows": {
       "30d": {
-        "clones": 256,
+        "clones": 234,
         "downloads_gained": 0,
         "stars_gained": 0,
-        "unique_visitors": 4,
-        "views": 4
+        "unique_visitors": 3,
+        "views": 3
       },
       "365d": {
-        "clones": 730,
+        "clones": 733,
         "downloads_gained": 0,
         "stars_gained": 0,
         "unique_visitors": 8,
         "views": 10
       },
       "90d": {
-        "clones": 580,
+        "clones": 573,
         "downloads_gained": 0,
         "stars_gained": 0,
         "unique_visitors": 6,
@@ -83,8 +83,8 @@
     "default_branch": "main",
     "fork": false,
     "open_issues": 0,
-    "pushed_at": "2026-11-09T11:40:02Z",
-    "size_kb": 3423
+    "pushed_at": "2026-11-10T11:17:49Z",
+    "size_kb": 3424
   },
   "popularity": {
     "forks": 0,
@@ -97,10 +97,6 @@
   "schema_version": 1,
   "traffic": {
     "clones": {
-      "2026-10-27": {
-        "count": 9,
-        "uniques": 5
-      },
       "2026-10-28": {
         "count": 2,
         "uniques": 2
@@ -152,6 +148,10 @@
       "2026-11-09": {
         "count": 24,
         "uniques": 14
+      },
+      "2026-11-10": {
+        "count": 3,
+        "uniques": 2
       }
     },
     "paths": [
@@ -179,10 +179,6 @@
       }
     ],
     "views": {
-      "2026-10-27": {
-        "count": 0,
-        "uniques": 0
-      },
       "2026-10-28": {
         "count": 1,
         "uniques": 1
@@ -232,6 +228,10 @@
         "uniques": 0
       },
       "2026-11-09": {
+        "count": 0,
+        "uniques": 0
+      },
+      "2026-11-10": {
         "count": 0,
         "uniques": 0
       }
