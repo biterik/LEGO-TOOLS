@@ -34,6 +34,14 @@
 #define SEXTIC_H
 
 #include <complex.h>
+#include <math.h>
+
+/* M_PI is not part of ISO C: glibc hides it under -std=c11 (and under
+ * _POSIX_C_SOURCE alone), macOS always defines it. Without this fallback the
+ * build failed on cmmg (gcc, SLES 15) on 2026-11-27 while it worked on macOS. */
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 typedef struct {
     /* Roots p(n) = pr(n) + i*pp(n) of the sextic, after the legacy
